@@ -7,6 +7,9 @@ function urlConfig() {
             },
             getOne: function (id) {
                 return `${this.url}/${id}`;
+            },
+            getByTag: function (id) {
+                return `${this.url}/tag/${id}`;
             }
         },        
         tagURL: {

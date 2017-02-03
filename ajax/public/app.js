@@ -39,51 +39,69 @@ $.noty.defaults = {
 
 
 
-$('.articles').on('click', '.new-article__display-btn, .new-article__close-form', changeNewArticleDisplayState);
+$('.articles').on('click', '.new-article__display-btn, .new-article__close-btn', changeNewArticleDisplayState);
+$('.articles').on('click', '.new-article__add-btn', addArticle);
 
-$('.articles').on('click', '.button__close', setArticleReadOnlyState);
-$('.articles').on('click', '.button__update', setArticleUpdatingState);
+$('.articles').on('click', '.article__close-btn', setArticleReadOnlyState);
+$('.articles').on('click', '.article__update-btn', setArticleUpdatingState);
 
-$('.articles').on('click', '.button__save', updateArticle);
-$('.articles').on('click', '.button__delete', deleteArticle);
-
-$('.articles').on('click', '.new-article__add-article', addArticle);
+$('.articles').on('click', '.article__save-btn', updateArticle);
+$('.articles').on('click', '.article__delete-btn', deleteArticle);
 
 $('.articles').on('click', '.tag__title', selectTag);
-$('.articles').on('click', '.simple-tags__item:not(.simple-tags__item--non-selected)', selectSimpleTag);
+$('.articles').on('click', '.simple-tags__item:not(.simple-tags__item--blocked)', selectSimpleTag);
 
 $('.articles').on('click', '.tags__add-btn', showAddTagInput);
 $('.articles').on('keypress', '.tags__new-name', addTag);
 
-$('.articles').on('click', '.tag__update-btn', tagUpdatingHandlerClick);
-$('.articles').on('keypress', '.tag__title-input', tagUpdatingHandlerPress);
+$('.articles').on('click', '.tag__update-btn', changeTagUpdatingState);
+$('.articles').on('keypress', '.tag__title-input', closeTagUpdatingState);
 
 $('.articles').on('click', '.tag__del-btn', tagDeletingHandler);
 
 $('.articles').on('click', '.details__more-link', showArticleDetails);
+$('body').on('click', '.articles__show-btn', buildFullArticlePage);
+
 
 $(document).ready(function() {
-    buildPageTemplate();
-    getArticles();
-    getTags();
+    buildPage();
 });
 
-function buildPageTemplate() {
-    let container = $('body').find('.articles');
-    container.empty();
-    var pageTemplate = getPageTemplate();
-    container.prepend(pageTemplate);
+function buildFullArticlePage(e) {
+    e.preventDefault();
+    location.hash = '';
+    buildPage();
 }
 
+function buildPage() {
+     if (location.hash) {
+        getArticleDetails(location.hash.slice(1))
+    } else {
+        let container = $('body').find('.articles');
+        container.empty();
+        var pageTemplate = getPageTemplate();
+        container.prepend(pageTemplate);
+        getArticles();
+        getTags();
+    }
+}
 
 // show-hide form for creatng new article
 function changeNewArticleDisplayState() {
     let newArticleDisplayBtn = $('body').find('.new-article__display-btn');
-    newArticleDisplayBtn.text(newArticleDisplayBtn.text() === 'add' ? 'close' : 'add' );    
     $('body').find('.new-article').toggleClass('display--hide');
-    $('body').find('.new-article input').val('');
-    let newArticleEl = $('body').find('.new-article');
-    getSimpleTagsRequest(newArticleEl); 
+    if (newArticleDisplayBtn.text() === 'add') {
+        newArticleDisplayBtn.text('close');    
+        let newArticleEl = $('body').find('.new-article');
+        getAllTagsForArticle(newArticleEl, []); 
+        $('body').find('.new-article :input').val('');
+    } else {
+        newArticleDisplayBtn.text('add');    
+    }
+}
+
+function selectSimpleTag() {
+    $(this).toggleClass("simple-tags__item--selected");
 }
 
 // close updateArticle form 
@@ -93,19 +111,38 @@ function setArticleReadOnlyState() {
     removeArticleNonActiveTags(articleEl);
 }
 
+function removeArticleNonActiveTags(container) {   
+    let tagsList = container.find(".simple-tags__item");
+    for (let tagEl of tagsList) {
+        if (!$(tagEl).hasClass("simple-tags__item--active") ) {
+            $(tagEl).remove();
+        } else {
+            $(tagEl).addClass("simple-tags__item--blocked simple-tags__item--selected")
+        }
+    }
+}
+
 // show updateArticle form 
 function setArticleUpdatingState() {
     let currentArticleEl = $(this).closest('.article');
-    let articleTagsId = getArticleSelectedTagsId(currentArticleEl);    
+    let articleActiveTagsId = getArticleActiveTagsId(currentArticleEl);    
     currentArticleEl.toggleClass('article--modify');
     currentArticleEl.find('.article__title-input').val(currentArticleEl.find('.article__title').text());
     currentArticleEl.find('.article__description-input').val(currentArticleEl.find('.article__description').text());
-    getSimpleTagsRequest(currentArticleEl, setArticleSelectedTags, articleTagsId);
+    getAllTagsForArticle(currentArticleEl, articleActiveTagsId);
+}
+
+function getArticleActiveTagsId(artileEl) {   
+    let tagsList = artileEl.find(".simple-tags__item--active");
+    let tagsIdList = [];
+    for (let tag of tagsList) {
+        tagsIdList.push($(tag).data("tag-id"))
+    }
+    return tagsIdList;
 }
 
 function updateArticle() {
-    let self = $(this);
-    let currentArticleEl = self.closest('.article');
+    let currentArticleEl = $(this).closest('.article');
     let articleID = currentArticleEl.data('id');
     let articleData = {};
     articleData.title = currentArticleEl.find('.article__title-input').val();
@@ -118,7 +155,7 @@ function updateArticle() {
             currentArticleEl.find('.article__title').text(articleData.title);
             currentArticleEl.find('.article__description').text(articleData.description);
             currentArticleEl.find('.details__more-link').attr('href', articleID);
-            self.closest('.article').toggleClass('article--modify');
+            currentArticleEl.toggleClass('article--modify');
             removeArticleNonSelectedTags(currentArticleEl);
             noty({ text: 'article is updated', type: 'success' });
         })
@@ -145,55 +182,41 @@ function updateArticleRequest(articleId, body) {
         });
 }
 
-function showArticleDetails () {
-    let self = $(this);
-    let articleId = $(this).closest(".article").data("id")
-    let articlesPlace = $('body').find('.articles__list');
-    articlesPlace.closest(".articles").empty();
-    location.hash=articleId;
-    $.get(urlConfig.articleURL.getOne(articleId), function(data) {
-        let article = data.article;
-        article.modified = helperService.timespanToHumanString(article.modified);
-        var articleTemplate = getArticleTemplate(article);
-        articlesPlace.prepend(articleTemplate);
-        let articleEl = articlesPlace.find(`.article[data-id=${article._id}]`);
-        let tagPromise = [];
-        let tagsArr = [];
-            for (let tagId of article.tags) {
-                tagPromise.push(
-                    new Promise(function (resolve, reject) {
-                        var xhr = new XMLHttpRequest();
-                        xhr.open('GET', urlConfig.tagURL.getOne(tagId));
-                        xhr.onload = function () {
-                            if (this.status >= 200 && this.status < 300) {
-                                let res = JSON.parse(xhr.responseText);
-                                tagsArr.push(res.tag);
-                                resolve();
-                            } else {
-                                reject();
-                            }
-                        }
-                        xhr.send();
-                    })
-                )
+function getAllTagsForArticle(articleEl, activeTagIdList) {
+    let tagContainer = articleEl.find(".simple-tags");
+    tagContainer.empty();
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', urlConfig.tagURL.getAll());
+    xhr.send();
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (xhr.status == 200) {
+                let tagList = JSON.parse(xhr.responseText);
+                for (let tag of tagList) {
+                    tag.active = activeTagIdList.includes(tag._id); 
+                    var tagTpl = getSimpleTagTemplate(tag);
+                    tagContainer.append(tagTpl);
+                }                
             }
+        }
+    }
+}
 
-            Promise.all(tagPromise)
-                .then(() => {
-                    for (let tag of tagsArr) {
-                        var tagTpl = getSimpleTagTemplate(tag);
-                        var tagsEl = articleEl.find(".simple-tags");
-                        tagsEl.append(tagTpl).find(`.simple-tags__item[data-tag-id=${tag._id}]`).addClass("simple-tags__item--active simple-tags__item--selected simple-tags__item--non-selected");
-                   } 
-                })
-                .catch(()=>console.log("error"))
-    })
+function removeArticleNonSelectedTags(container) {   
+    let tagsList = container.find(".simple-tags__item");
+    for (let tagEl of tagsList) {
+        if (!$(tagEl).hasClass("simple-tags__item--selected") ) {
+            $(tagEl).remove();
+        } else {
+            $(tagEl).addClass("simple-tags__item--active simple-tags__item--blocked")            
+        }
+    }
 }
 
 function getArticles() {
     let self = $(this);
-    let articlesPlace = $('body').find('.articles__list');
-    articlesPlace.empty();
+    let articlesContainer = $('body').find('.articles__list');
+    articlesContainer.empty();
 
     var promise = fetch(urlConfig.articleURL.getAll(), { method: 'GET'});
     promise
@@ -208,8 +231,8 @@ function getArticles() {
             for (let article of data) {
                 article.modified = helperService.timespanToHumanString(article.modified);
                 var articleTemplate = getArticleTemplate(article);
-                articlesPlace.prepend(articleTemplate);
-                let articleEl = articlesPlace.find(`.article[data-id=${article._id}]`);
+                articlesContainer.prepend(articleTemplate);
+                let articleEl = articlesContainer.find(`.article[data-id=${article._id}]`);
 
                 let tagPromise = [];
                 let tagsArr = [];
@@ -221,6 +244,7 @@ function getArticles() {
                             xhr.onload = function () {
                                 if (this.status >= 200 && this.status < 300) {
                                     let res = JSON.parse(xhr.responseText);
+                                    res.tag.active = true;
                                     tagsArr.push(res.tag);
                                     resolve();
                                 } else {
@@ -237,8 +261,8 @@ function getArticles() {
                         for (let tag of tagsArr) {
                             var tagTpl = getSimpleTagTemplate(tag);
                             var tagsEl = articleEl.find(".simple-tags");
-                            tagsEl.append(tagTpl).find(`.simple-tags__item[data-tag-id=${tag._id}]`).addClass("simple-tags__item--active simple-tags__item--selected simple-tags__item--non-selected");
-                    } 
+                            tagsEl.append(tagTpl).find(`.simple-tags__item[data-tag-id=${tag._id}]`).addClass("simple-tags__item--blocked");
+                        } 
                     })
                     .catch(()=>console.log("error"))
             }
@@ -270,7 +294,6 @@ function deleteArticle() {
 }
 
 
-
 // send new article to server
 function addArticle() {
     let self = $(this);
@@ -294,6 +317,16 @@ function addArticle() {
         })
 }
 
+function getArticleSelectedTagsId(artileEl) {    
+    let tagsList = artileEl.find(".simple-tags__item--selected");
+    let tagsIdList = [];
+    for (let tag of tagsList) {
+        tagsIdList.push($(tag).data("tag-id"))
+    }
+    return tagsIdList;
+
+}
+
 function articlePostRequest(body) {
     return new Promise(function(resolve, reject) {
         let xhr = new XMLHttpRequest();
@@ -313,7 +346,6 @@ function articlePostRequest(body) {
 }
 
 // tags
-
 function getTags() {
     let self = $(this);
     let tagsPlace = $('body').find('.whole-tags-container .tags__list');
@@ -335,85 +367,13 @@ function getTags() {
     }
 }
 
-function getSimpleTagsRequest(articleEl, handler, tagIdList) {
-    let tagContainer = articleEl.find(".simple-tags");
-    tagContainer.empty();
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', urlConfig.tagURL.getAll());
-    xhr.send();
-    
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState === 4) {
-            if (xhr.status == 200) {
-                let tagList = JSON.parse(xhr.responseText);
-                for (let tag of tagList) {
-                    var tagTpl = getSimpleTagTemplate(tag);
-                    tagContainer.append(tagTpl);
-                }
-                if (handler) {
-                    handler(tagContainer, tagIdList);
-                }
-            }
-        }
-    }
-}
-
-
-function getArticleSelectedTagsId (artileEl) {   
-    let tagsList = artileEl.find(".simple-tags__item--selected");
-    let tagsIdList = [];
-    for (let tag of tagsList) {
-        tagsIdList.push($(tag).data("tag-id"))
-    }
-    return tagsIdList;
-}
-
-function getArticleActiveTags(container) {   
-    let tagsList = container.find(".simple-tags__item--active");
-    let tagsIdList = [];
-    for (let tag of tagsList) {
-        tagsIdList.push($(tag).data("tag-id"))
-    }
-    return tagsIdList;
-}
-
-function removeArticleNonActiveTags(container) {   
-    let tagsList = container.find(".simple-tags__item");
-    for (let tagEl of tagsList) {
-        if (!$(tagEl).hasClass("simple-tags__item--active") ) {
-            $(tagEl).remove();
-        } else {
-            $(tagEl).addClass("simple-tags__item--non-selected simple-tags__item--selected")
-        }
-    }
-}
-
-function removeArticleNonSelectedTags(container) {   
-    let tagsList = container.find(".simple-tags__item");
-    for (let tagEl of tagsList) {
-        if (!$(tagEl).hasClass("simple-tags__item--selected") ) {
-            $(tagEl).remove();
-        } else {
-            $(tagEl).addClass("simple-tags__item--non-selected")
-        }
-    }
-}
-
-function setArticleSelectedTags(tagContainer, articleTags) {   
-    let tagsList = tagContainer.find(".simple-tags__item");
-    for (let tag of tagsList) {
-        for (let tagId of articleTags) {
-            if ($(tag).data("tag-id") === tagId) {
-                $(tag).addClass("simple-tags__item--selected simple-tags__item--active")
-            }
-        }
-    }
-}
-
-function createTag(data, handler) {
-    $.post(urlConfig.tagURL.add(), data, handler)
-        .done(function(){
-            noty({ text: 'article is added', type: 'success' });            
+function createTag(data, tagEl) {
+    $.post(urlConfig.tagURL.add(), data, tagEl)
+        .done(function(data){
+            noty({ text: 'article is added', type: 'success' }); 
+            tagEl.closest(".tags__new").removeClass("tags__new--entering");
+            var tagTpl = getTagTemplate(data.tag);
+            tagEl.closest(".tags").find(".tags__list").append(tagTpl);           
         })
         .fail(function() {
             noty({ text: 'creating error', type: 'error' });
@@ -429,12 +389,79 @@ function selectTag(e) {
         tagEl.clone().appendTo( ".active-tags-container .tags__list" );
     }
     tagEl.toggleClass("tag--selected");
+    selectArticlesByActiveTag();
 }
 
-function selectSimpleTag() {
-    $(this).toggleClass("simple-tags__item--selected");
+function selectArticlesByActiveTag() {
+    let activeTags = $(".active-tags-container .tag");
+    let activeTagsId = [];
+    for (let tag of activeTags) {
+        activeTagsId.push($(tag).data("tag-id"));
+    }
+    if (activeTagsId[0]) {
+        getArticlesByTags(activeTagsId);
+    } else {
+        getArticles();
+    }
 }
 
+function getArticlesByTags(activeTagsId) {
+    let articlesContainer = $('body').find('.articles__list');
+    articlesContainer.empty();
+
+    for (let tagId of activeTagsId) {
+        let promise = fetch(urlConfig.articleURL.getByTag(tagId), { method: 'GET'});
+        promise
+            .then((response) => {
+                if (response.status === 200) {
+                    return response.json();
+                } else {
+                    return res.json().then(Promise.reject.bind(Promise));
+                }
+            })
+            .then((data) => {
+                for (let article of data) {
+                    article.modified = helperService.timespanToHumanString(article.modified);
+                    var articleTemplate = getArticleTemplate(article);
+                    articlesContainer.prepend(articleTemplate);
+                    let articleEl = articlesContainer.find(`.article[data-id=${article._id}]`);
+
+                    let tagPromise = [];
+                    let tagsArr = [];
+                    for (let tagId of article.tags) {
+                        tagPromise.push(
+                            new Promise(function (resolve, reject) {
+                                var xhr = new XMLHttpRequest();
+                                xhr.open('GET', urlConfig.tagURL.getOne(tagId));
+                                xhr.onload = function () {
+                                    if (this.status >= 200 && this.status < 300) {
+                                        let res = JSON.parse(xhr.responseText);
+                                        res.tag.active = true;
+                                        tagsArr.push(res.tag);
+                                        resolve();
+                                    } else {
+                                        reject();
+                                    }
+                                }
+                                xhr.send();
+                            })
+                        )
+                    }
+
+                    Promise.all(tagPromise)
+                        .then(() => {
+                            for (let tag of tagsArr) {
+                                var tagTpl = getSimpleTagTemplate(tag);
+                                var tagsEl = articleEl.find(".simple-tags");
+                                tagsEl.append(tagTpl).find(`.simple-tags__item[data-tag-id=${tag._id}]`).addClass("simple-tags__item--blocked");
+                            } 
+                        })
+                        .catch(()=>console.log("error"))
+                }
+            })
+    }
+
+}
 
 function showAddTagInput(e) {
     e.preventDefault();
@@ -452,18 +479,12 @@ function addTag(e) {
             title: $(this).val()
         };
         
-        createTag(data, function() {
-            self.closest(".tags__new").removeClass("tags__new--entering");
-            var tagTpl = getTagTemplate(data);
-            self.closest(".tags").find(".tags__list").append(tagTpl);
-        });
-
+        createTag(data, self)
     }
 }
 
-
 // updating tag
-function tagUpdatingHandlerClick(e) {   
+function changeTagUpdatingState(e) {   
     e.stopPropagation();
     $(this).closest(".tag").toggleClass("tag--updating");
     if ($(this).text() === "save") {
@@ -476,20 +497,19 @@ function tagUpdatingHandlerClick(e) {
     }
 }
 
-function tagUpdatingHandlerPress(e) {
+function closeTagUpdatingState(e) {
     if (e.keyCode === 13) {
         updateTag(this);
         $(this).closest(".tag").toggleClass("tag--updating");
         $(this).closest(".tag").find(".tag__update-btn").text("update");
-        
     }
 }
 
-function updateTag(self) {
+function updateTag(tagEl) {
     let data = {
-        title: $(self).closest(".tag").find(".tag__title-input").val()
+        title: $(tagEl).closest(".tag").find(".tag__title-input").val()
     }
-    let tagId = $(self).closest(".tag").data("tag-id"); 
+    let tagId = $(tagEl).closest(".tag").data("tag-id"); 
     updateTagRequest(tagId, data)
 }
 
@@ -511,16 +531,10 @@ function updateTagRequest(tagId, data) {
     })
 }
 
-
 // delete tag
 function tagDeletingHandler() {
     let self = $(this);
     let tagId = $(this).closest(".tag").data("tag-id");
-    deleteTagRequest(tagId)
-}
-
-
-function deleteTagRequest(tagId) {
     var xhr = new XMLHttpRequest();
     xhr.open('DELETE', urlConfig.tagURL.getOne(tagId));
     xhr.send();
@@ -529,6 +543,7 @@ function deleteTagRequest(tagId) {
             if (xhr.status == 200) {
                 noty({ text: 'tag is deleted', type: 'success' });
                 $(`.tag[data-tag-id='${tagId}']`).remove();
+                selectArticlesByActiveTag();
             } else {
                 noty({ text: 'deleting error', type: 'error' });
             }
@@ -537,3 +552,53 @@ function deleteTagRequest(tagId) {
 }
 
 
+function showArticleDetails(e) {
+    e.preventDefault();
+    let self = $(this);
+    let articleId = $(this).closest(".article").data("id");
+    location.hash=articleId;
+    getArticleDetails(articleId);
+}
+
+function getArticleDetails(articleId) {
+    let articlesContainer = $('body').find('.articles');
+    articlesContainer.empty();
+    $.get(urlConfig.articleURL.getOne(articleId), function(data) {
+        let article = data.article;
+        article.modified = helperService.timespanToHumanString(article.modified);
+        var articleTemplate = getArticleTemplate(article);
+        articlesContainer.append(articleTemplate);
+        let articleEl = articlesContainer.find(`.article[data-id=${article._id}]`);
+        let tagPromise = [];
+        let tagsArr = [];
+            for (let tagId of article.tags) {
+                tagPromise.push(
+                    new Promise(function (resolve, reject) {
+                        var xhr = new XMLHttpRequest();
+                        xhr.open('GET', urlConfig.tagURL.getOne(tagId));
+                        xhr.onload = function () {
+                            if (this.status >= 200 && this.status < 300) {
+                                let res = JSON.parse(xhr.responseText);
+                                tagsArr.push(res.tag);
+                                resolve();
+                            } else {
+                                reject();
+                            }
+                        }
+                        xhr.send();
+                    })
+                )
+            }
+
+            Promise.all(tagPromise)
+                .then(() => {
+                    for (let tag of tagsArr) {
+                        tag.active = true;
+                        var tagTpl = getSimpleTagTemplate(tag);
+                        var tagsEl = articleEl.find(".simple-tags");
+                        tagsEl.append(tagTpl).find(`.simple-tags__item[data-tag-id=${tag._id}]`).addClass("simple-tags__item--blocked");
+                    } 
+                })
+                .catch(()=>console.log("error"))
+    })
+}

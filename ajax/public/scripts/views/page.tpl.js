@@ -14,16 +14,16 @@ function getPageTemplate() {
                 <form class="new-article__form">
                     <h4 class="new-article__headline">Create new article</h4>
                     <input type="text" class="input-field new-article__title" placeholder="inter title" />
-                    <input type="text" class="input-field new-article__description" placeholder="inter desctription" />
-                    <ul class="simple-tags"></ul>
+                    <textarea class="input-field new-article__description" placeholder="inter desctription" />
+                    <ul class="new-article__simple-tags simple-tags"></ul>
                 </form>
 
                 <ul class="details control-buttons">
                     <li class="details__item control-buttons__item">
-                        <button class="button new-article__add-article">save</button>
+                        <button class="button new-article__add-btn">save</button>
                     </li>
                     <li class="details__item control-buttons__item">
-                        <button class="button new-article__close-form">close</button>
+                        <button class="button new-article__close-btn">close</button>
                     </li>
                 </ul>
             </div>
@@ -32,6 +32,7 @@ function getPageTemplate() {
             </ul>
 
             <section class="articles__tags tags whole-tags-container">
+                <h3 class="tags__caption">Tags</h3>
                 <ul class="tags__list">        
                 </ul>
                 <div class="tags__new">

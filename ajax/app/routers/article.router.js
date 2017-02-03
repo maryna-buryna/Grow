@@ -16,6 +16,9 @@ articleRouter.route('/:id')
     .put(articleCtrl.updateArticle)
     .delete(articleCtrl.deleteArticle)
 
+articleRouter.route('/tag/:id')
+    .get(articleCtrl.getArticlesByTag)
+
 articleRouter
     .use(articleCtrl.notFound)
     .use(articleCtrl.internalError);

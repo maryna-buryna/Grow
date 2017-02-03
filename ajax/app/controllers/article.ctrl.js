@@ -18,6 +18,28 @@ var articleCtrl = {
         });
     },
 
+    getArticlesByTag: function(req, res) {
+        return Article.find(function(err, articles) {
+            if (!err) {
+                let resArticles = []
+                for (let article of articles) {
+                    let tagId = req.params.id;
+                
+                    article.tags.find ((el, index) => {
+                        if (el == req.params.id ) {
+                            resArticles.push(article);
+                        }
+                    })
+                }    
+                return res.send(resArticles);
+            } else {
+                res.statusCode = 500;
+                console.log('Internal error(%d): %s', res.statusCode, err.message);
+                return res.send({ error: 'Server error' });
+            }
+        });
+    },
+
     postArticle: function(req, res) {
         console.log(req.body)
         var article = new Article({

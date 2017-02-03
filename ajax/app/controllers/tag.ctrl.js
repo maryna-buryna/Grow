@@ -1,6 +1,7 @@
 'use strict';
 
 var Tag    = require('./../models/tag.model');
+var Article    = require('./../models/article.model');
 
 
 var TagCtrl = {
@@ -98,7 +99,7 @@ var TagCtrl = {
         res.send();
     },
 
-    deleteTag: function(req, res) {
+    deleteTag: function(req, res, next) {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Methods", "DELETE");
         return Tag.findById(req.params.id, function(err, tag) {
@@ -107,9 +108,8 @@ var TagCtrl = {
                 return res.send({ error: 'Not found' });
             }
             return tag.remove(function(err) {
-                if (!err) {
-                    console.log("tag removed");
-                    return res.send({ status: 'OK' });
+                if (!err) {                    
+                    next();
                 } else {
                     res.statusCode = 500;
                     console.log('Internal error(%d): %s', res.statusCode, err.message);
@@ -118,6 +118,22 @@ var TagCtrl = {
             });
         });
     },
+    
+        deleteTagFromArticle: function (req, res) {
+         Article
+            .find({})
+            .then((arr) => {   
+                for (let article of arr) {
+                    let index = article.tags.indexOf(req.params.id);
+                    if (index > -1) {
+                        article.tags.splice(index, 1);
+                        article.save()
+                    }
+                }
+                return res.send({ status: 'OK'})               
+            })
+    },
+    
     
     notFound: function(req, res, next) {
         res.status(404);

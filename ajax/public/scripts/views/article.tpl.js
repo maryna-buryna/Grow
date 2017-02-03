@@ -10,33 +10,33 @@ function getArticleTemplate(article) {
 
                         <div class="article__description-container">
                             <p class="article__description display--show">${article.description}</p>
-                            <input type="text" class="display--modify input-field article__description-input" placeholder="inter desctription" />
+                            <textarea class="display--modify input-field article__description-input" placeholder="inter desctription" />
                         </div>
 
-                        <ul class="simple-tags"></ul>
+                        <ul class="article__simple-tags simple-tags"></ul>
 
                         <div class="article__details">
 
                             <ul class="details">
                                 <li class="details__item details__date">${article.modified}</li>
                                 <li class="details__item details__more">
-                                    <a href="${article.link}" class="details__more-link">read more</a>
+                                    <a href="${article._id}" class="details__more-link">read more</a>
                                 </li>
                             </ul>
 
                             <ul class="details control-buttons">
 
                                 <li class="details__item control-buttons__item">
-                                    <button class="button button__delete">delete</button>
+                                    <button class="button article__delete-btn button__delete ">delete</button>
                                 </li>
                                 <li class="details__item control-buttons__item display--modify">
-                                    <button class="button button__save">save</button>
+                                    <button class="button article__save-btn button__save">save</button>
                                 </li>
                                 <li class="details__item control-buttons__item display--show">
-                                    <button class="button button__update">update</button>
+                                    <button class="button article__update-btn button__update">update</button>
                                 </li>
                                 <li class="details__item control-buttons__item display--modify">
-                                    <button class="button button__close">close</button>
+                                    <button class="button article__close-btn button__close">close</button>
                                 </li>
                             </ul>
                         </div>
