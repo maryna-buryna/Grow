@@ -1,13 +1,14 @@
 import './../services/notify.settings.js';
 
-import urlConfig from './../services/url.config.js'
-import getTagTemplate from './../views/tag.tpl.js';
-import getSimpleTagTemplate from './../views/simple-tag.tpl.js';
+import urlConfig from './../services/url.config'
+import getTagTemplate from './../views/tag.tpl';
+import getSimpleTagTemplate from './../views/simple-tag.tpl';
 
-import articleCtrl from './article.ctrl.js';
+import articleCtrl from './article.ctrl';
 
 
 class TagsCtrl {
+
     constructor(){
         this.getSimpleTagTemplate = getSimpleTagTemplate;
         this.getTagTemplate = getTagTemplate;

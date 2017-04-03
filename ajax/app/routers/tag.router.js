@@ -14,14 +14,9 @@ tagRouter.route('/:id')
     .options(tagCtrl.setOptions)
     .get(tagCtrl.getTag)
     .put(tagCtrl.updateTag)
-    
 
 tagRouter
     .delete('/:id', tagCtrl.deleteTag)
     .use('/:id', tagCtrl.deleteTagFromArticle);
-
-tagRouter
-    .use(tagCtrl.notFound)
-    .use(tagCtrl.internalError);
 
 module.exports = tagRouter;

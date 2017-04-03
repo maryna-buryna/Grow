@@ -18,8 +18,5 @@ articleRouter.route('/:id')
 
 articleRouter.route('/tag/:id')
     .get(articleCtrl.getArticlesByTag)
-
-articleRouter
-    .use(articleCtrl.notFound)
-    .use(articleCtrl.internalError);
+    
 module.exports = articleRouter;

@@ -1,16 +1,16 @@
-import './../services/notify.settings.js';
+import './../services/notify.settings';
 
-import urlConfig from './../services/url.config.js'
-import helperService from './../services/helper.service.js'
-import articleRequest from './../services/article-request.service.js';
+import urlConfig from './../services/url.config'
+import helperService from './../services/helper.service'
+import articleRequest from './../services/article-request.service';
 
-import tagsCtrl from './tags.ctrl.js';
-import getArticleTemplate from './../views/article.tpl.js';
+import tagsCtrl from './tags.ctrl';
+import getArticleTemplate from './../views/article.tpl';
 
 
 class ArticleCtrl {
 
-    constructor(){
+    constructor() {
         this.getArticleTemplate = getArticleTemplate;
     }
 
@@ -56,7 +56,7 @@ class ArticleCtrl {
         articleData.modified = new Date();  
 
         var promise = articleRequest.updateArticleRequest(articleID, articleData);
-        promise.then((data) => {
+            promise.then((data) => {
                 currentArticleEl.find('.article__title').text(articleData.title);
                 currentArticleEl.find('.article__description').text(articleData.description);
                 currentArticleEl.find('.details__more-link').attr('href', articleID);
@@ -74,15 +74,8 @@ class ArticleCtrl {
         let articleDOM = $(event.target).closest('.article');
         let articleId = articleDOM.data("id");
 
-        var promise = fetch(urlConfig.articleURL.getOne(articleId), { method: 'DELETE'});
+        var promise = articleRequest.articleDeleteRequest(articleId);
             promise
-                .then((response) => {
-                    if (response.status === 200) {
-                        return response.json();
-                    } else {
-                        return res.json().then(Promise.reject.bind(Promise));
-                    }
-                })
                 .then((data) => {
                     articleDOM.closest('.articles__item').remove();
                     noty({ text: 'article is deleted', type: 'success' });
@@ -116,50 +109,27 @@ class ArticleCtrl {
             })
     }
 
+
     getArticles() {
         let self = this; 
         let articlesContainer = $('body').find('.articles__list');
         articlesContainer.empty();
 
-        var promise = fetch(urlConfig.articleURL.getAll(), { method: 'GET'});
-        promise
-            .then((response) => {
-                if (response.status === 200) {
-                    return response.json();
-                } else {
-                    return res.json().then(Promise.reject.bind(Promise));
-                }
-            })
-            .then((data) => {
-                for (let article of data) {
-                    article.modified = helperService.timespanToHumanString(article.modified);
-                    var articleTemplate = self.getArticleTemplate(article);
-                    articlesContainer.prepend(articleTemplate);
-                    let articleEl = articlesContainer.find(`.article[data-id=${article._id}]`);
+        var promise = articleRequest.getArticlesRequest();
+            promise
+                .then((data) => {
+                    for (let article of data) {
+                        article.modified = helperService.timespanToHumanString(article.modified);
+                        var articleTemplate = self.getArticleTemplate(article);
+                        articlesContainer.prepend(articleTemplate);
+                        let articleEl = articlesContainer.find(`.article[data-id=${article._id}]`);
 
-                    let tagPromise = [];
-                    let tagsArr = [];
-                    for (let tagId of article.tags) {
-                        tagPromise.push(
-                            new Promise(function (resolve, reject) {
-                                var xhr = new XMLHttpRequest();
-                                xhr.open('GET', urlConfig.tagURL.getOne(tagId));
-                                xhr.onload = function () {
-                                    if (this.status >= 200 && this.status < 300) {
-                                        let res = JSON.parse(xhr.responseText);
-                                        res.tag.active = true;
-                                        tagsArr.push(res.tag);
-                                        resolve();
-                                    } else {
-                                        reject();
-                                    }
-                                }
-                                xhr.send();
-                            })
-                        )
-                    }
-
-                    Promise.all(tagPromise)
+                        let tagPromise = [];
+                        let tagsArr = [];
+                        for (let tagId of article.tags) {
+                            tagPromise.push(articleRequest.getArticleActiveTagRequest(tagsArr, tagId));
+                        }
+                        Promise.all(tagPromise)
                         .then(() => {
                             for (let tag of tagsArr) {
                                 var tagTpl = tagsCtrl.getSimpleTagTemplate(tag);
@@ -167,10 +137,11 @@ class ArticleCtrl {
                                 tagsEl.append(tagTpl).find(`.simple-tags__item[data-tag-id=${tag._id}]`).addClass("simple-tags__item--blocked");
                             } 
                         })
-                        .catch(()=>console.log("error"))
+                        .catch(() => console.log("error"))
                 }
             })
     }
+
 
     showArticleDetails(event) {
         event.preventDefault();
@@ -178,6 +149,7 @@ class ArticleCtrl {
         location.hash=articleId;
         this.getArticleDetails(articleId);
     }
+
 
     getArticleDetails(articleId) {
         let self = this;
@@ -192,34 +164,17 @@ class ArticleCtrl {
             let tagPromise = [];
             let tagsArr = [];
                 for (let tagId of article.tags) {
-                    tagPromise.push(
-                        new Promise(function (resolve, reject) {
-                            var xhr = new XMLHttpRequest();
-                            xhr.open('GET', urlConfig.tagURL.getOne(tagId));
-                            xhr.onload = function () {
-                                if (this.status >= 200 && this.status < 300) {
-                                    let res = JSON.parse(xhr.responseText);
-                                    tagsArr.push(res.tag);
-                                    resolve();
-                                } else {
-                                    reject();
-                                }
-                            }
-                            xhr.send();
-                        })
-                    )
+                    tagPromise.push(articleRequest.getArticleActiveTagRequest(tagsArr, tagId))
                 }
-
                 Promise.all(tagPromise)
                     .then(() => {
                         for (let tag of tagsArr) {
-                            tag.active = true;
                             var tagTpl = tagsCtrl.getSimpleTagTemplate(tag);
                             var tagsEl = articleEl.find(".simple-tags");
                             tagsEl.append(tagTpl).find(`.simple-tags__item[data-tag-id=${tag._id}]`).addClass("simple-tags__item--blocked");
                         } 
                     })
-                    .catch(()=>console.log("error"))
+                    .catch(() => console.log("error"))
         })
     }
 
@@ -237,21 +192,15 @@ class ArticleCtrl {
         }
     }
 
+
     getArticlesByTags(activeTagsId) {
         let self = this;
         let articlesContainer = $('body').find('.articles__list');
         articlesContainer.empty();
 
         for (let tagId of activeTagsId) {
-            let promise = fetch(urlConfig.articleURL.getByTag(tagId), { method: 'GET'});
+            let promise = articleRequest.getArticleActiveTagRequest(tagId);
             promise
-                .then((response) => {
-                    if (response.status === 200) {
-                        return response.json();
-                    } else {
-                        return res.json().then(Promise.reject.bind(Promise));
-                    }
-                })
                 .then((data) => {
                     for (let article of data) {
                         article.modified = helperService.timespanToHumanString(article.modified);
@@ -262,25 +211,8 @@ class ArticleCtrl {
                         let tagPromise = [];
                         let tagsArr = [];
                         for (let tagId of article.tags) {
-                            tagPromise.push(
-                                new Promise(function (resolve, reject) {
-                                    var xhr = new XMLHttpRequest();
-                                    xhr.open('GET', urlConfig.tagURL.getOne(tagId));
-                                    xhr.onload = function () {
-                                        if (this.status >= 200 && this.status < 300) {
-                                            let res = JSON.parse(xhr.responseText);
-                                            res.tag.active = true;
-                                            tagsArr.push(res.tag);
-                                            resolve();
-                                        } else {
-                                            reject();
-                                        }
-                                    }
-                                    xhr.send();
-                                })
-                            )
+                            tagPromise.push(articleRequest.getArticleActiveTagRequest(tagsArr, ragId));
                         }
-
                         Promise.all(tagPromise)
                             .then(() => {
                                 for (let tag of tagsArr) {

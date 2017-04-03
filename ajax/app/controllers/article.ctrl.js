@@ -1,7 +1,8 @@
 'use strict';
 
-var Article = require('./../models/article.model');
-var Tag    = require('./../models/tag.model');
+var Article      = require('./../models/article.model');
+var Tag          = require('./../models/tag.model');
+var notification = require('./../service/notification.service');
 
 
 var articleCtrl = {
@@ -11,12 +12,11 @@ var articleCtrl = {
             if (!err) {
                 return res.send(articles);
             } else {
-                res.statusCode = 500;
-                console.log('Internal error(%d): %s', res.statusCode, err.message);
-                return res.send({ error: 'Server error' });
+                notification.serverErr(res);
             }
         });
     },
+
 
     getArticlesByTag: function(req, res) {
         return Article.find(function(err, articles) {
@@ -33,15 +33,13 @@ var articleCtrl = {
                 }    
                 return res.send(resArticles);
             } else {
-                res.statusCode = 500;
-                console.log('Internal error(%d): %s', res.statusCode, err.message);
-                return res.send({ error: 'Server error' });
+                notification.serverErr(res);
             }
         });
     },
 
+
     postArticle: function(req, res) {
-        console.log(req.body)
         var article = new Article({
             title:       req.body.title,
             author:      req.body.author,
@@ -55,109 +53,75 @@ var articleCtrl = {
                 console.log("article created");
                 return res.send({ status: 'OK', article: article });
             } else {
-                console.log(err);
                 if (err.name == 'ValidationError') {
-                    res.statusCode = 400;
-                    res.send({ error: 'Validation error' });
+                    notification.validationErr(res);
                 } else {
-                    res.statusCode = 500;
-                    res.send({ error: 'Server error' });
+                    notification.serverErr(res);
                 }
-                console.log('Internal error(%d): %s', res.statusCode, err.message);
             }
         });
     },
 
+
     getArticle: function(req, res) {
         return Article.findById(req.params.id, function(err, article) {
-            if (!article) {
-                res.statusCode = 404;
-                return res.send({ error: 'Not found' });
+            if (!article) { 
+                notification.notFound(res) 
             }
             if (!err) {
                 return res.send({ status: 'OK', article: article });
             } else {
-                res.statusCode = 500;
-                console.log('Internal error(%d): %s', res.statusCode, err.message);
-                return res.send({ error: 'Server error' });
+                notification.serverErr(res);
             }
         });
     },
 
+
+    setOptions: function(req, res) {
+        return res.send();
+    },
+
+
     updateArticle: function(req, res) {
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Methods", "PUT");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
         return Article.findById(req.params.id, function(err, article) {
-
             if (!article) {
-                res.statusCode = 404;
-                return res.send({ error: 'Not found' });
+                notification.notFound(res)
             }
-
             for (let key in req.body) {
                 article[key] = req.body[key];
             }
-
             return article.save(function(err) {
                 if (!err) {
                     console.log("article updated");
                     return res.send({ status: 'OK', article: article });
                 } else {
                     if (err.name == 'ValidationError') {
-                        res.statusCode = 400;
-                        res.send({ error: 'Validation error' });
+                        notification.validationErr(res);
                     } else {
-                        res.statusCode = 500;
-                        res.send({ error: 'Server error' });
+                        notification.serverErr();
                     }
-                    console.log('Internal error(%d): %s', res.statusCode, err.message);
                 }
             });
         });
     },
 
-    setOptions: function(req, res) {
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Methods", "DELETE, PUT, OPTIONS");
-        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-        return res.send();
-    },
 
     deleteArticle: function(req, res) {
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Access-Control-Allow-Methods", "DELETE");
         return Article.findById(req.params.id, function(err, article) {
             if (!article) {
-                res.statusCode = 404;
-                return res.send({ error: 'Not found' });
+                notification.notFound(res)
             }
             return article.remove(function(err) {
                 if (!err) {
                     console.log("article removed");
-                    return res.send({ status: 'OK' });
+                    notification.goodRequest(res);
                 } else {
-
-                    res.statusCode = 500;
-                    console.log('Internal error(%d): %s', res.statusCode, err.message);
-                    return res.send({ error: 'Server error' });
+                    notification.serverErr(res);
                 }
             });
         });
     },
-    
-    notFound: function(req, res, next) {
-        res.status(404);
-        res.send({ error: 'Not found' });
-        return;
-    },
 
-    internalError: function(err, req, res, next) {
-        res.status(err.status || 500);
-        res.send({ error: err.message });
-        return;
-    },
 
     setHeaders: function(req, res, next) {
         res.setHeader("Access-Control-Allow-Origin", "*");
