@@ -78,7 +78,6 @@ class ArticleRequest {
 
     getArticlesRequest() {
        return new Promise(function (resolve, reject) {
-            debugger;
             var xhr = new XMLHttpRequest();
             xhr.open('GET', urlConfig.articleURL.getAll());
             xhr.onload = function () {
@@ -98,6 +97,7 @@ class ArticleRequest {
             var xhr = new XMLHttpRequest();
             xhr.open('GET', urlConfig.articleURL.getByTag(tagId));
             xhr.onload = function () {
+                debugger;
                 if (this.status >= 200 && this.status < 300) {
                     let res = JSON.parse(xhr.responseText);
                     resolve(res);

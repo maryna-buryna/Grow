@@ -19,7 +19,7 @@ module.exports = {
                 loader: "style-loader!css-loader"
             },
             {
-                test: /\.(jpg|ttf|eot|jpg|jfif|ysvg|woff(2)?)(\?[a-z0-9=&.]+)?$/,
+                test: /\.(jpg|ttf|eot|jpg|png|jfif|ysvg|woff(2)?)(\?[a-z0-9=&.]+)?$/,
                 loader: "file-loader"
             },
             {

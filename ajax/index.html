@@ -4,6 +4,8 @@
 <head>
     <title>final-task</title>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
     <!--<link rel="stylesheet" href="assets/style.css">-->
 
@@ -12,29 +14,61 @@
 <body>
     <main class="main-wrapper">
 
-        <aside class="aside">
-            <nav class="site-nav">
-                <a href="#" class="site-logo">
-                    <span href="#" class="site-logo__text">B</span>
-                </a>
-                <ul class="site-nav__list">
-                    <li class="site-nav__item">
-                        <a href="#" class="site-nav__link articles__show-btn ">All articles</a>
-                    </li>
-                    <li class="site-nav__item">
-                        <a href="#" class="site-nav__link">Stories</a>
-                    </li>
-                </ul>
-            </nav>
-            <footer class="aside-footer">
-                <p class="aside-footer__text">Basis</p>
-                <p class="aside-footer__copyright">Made with <span class="footer-aside__icon"></span> by Bootply</p>
-            </footer>
-        </aside>
+        <nav class="site-nav">
+            <a href="#" class="site-logo">
+                <span href="#" class="site-logo__text">B</span>
+            </a>
+            <ul class="site-nav__list">
+                <li class="site-nav__item">
+                    <a href="#" class="site-nav__link articles__show-btn">All articles</a>
+                </li>
+                <li class="site-nav__item">
+                    <a href="#" class="site-nav__link">Stories</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="new-article new-article--hide">
+            <form class="new-article__form">
+                <h4 class="new-article__headline">Create new article</h4>
+                <input type="text" class="input-field new-article__title" placeholder="inter title" />
+                <input type="text" class="input-field new-article__image" placeholder="inter image url" />                    
+                <textarea class="input-field new-article__description" placeholder="inter desctription"></textarea>
+                <ul class="new-article__simple-tags simple-tags"></ul>
+            </form>
+
+            <ul class="new-article__buttons">
+                <li class="new-article__button new-article__add-btn">
+                    <a href="#" class="add-button">CREATE NEW ARTICLE</a>
+                </li>
+                <li class="new-article__button new-article__save-btn">
+                    <a href="#" class="save-button">save</a>
+                </li>
+                <li class="new-article__button new-article__close-btn">
+                    <a href="#" class="close-button">close</a>
+                </li>
+            </ul>
+        </div>
 
         <section class="articles">
-
+            
         </section>
+    
+        <section class="articles__tags tags whole-tags-container">
+            <h3 class="tags__caption">Tags</h3>
+            <ul class="tags__list">
+            
+            </ul>
+            <div class="tags__new">
+                <input type="text" class="tags__new-name" placeholder="tag"/>
+                <a href class="tags__add-btn">add</a>
+        </section>
+
+        <footer class="aside-footer">
+            <p class="aside-footer__text">Basis</p>
+            <p class="aside-footer__copyright">Made with <span class="footer-aside__icon"></span> by Bootply</p>
+        </footer>
+        
     </main>
     <script src="../public/assets/bundle.js"></script>
 </body>
