@@ -121,10 +121,13 @@ class ArticleCtrl {
                         var articleHTML = '';
                         for (let i = 0; i < data.length; i++) {
                             let article = data[i];
-                            let loop = Math.floor(i / siteSettings.columnsForLoop);
-                            let currentForm = siteSettings.articlesLoop[i % siteSettings.articlesLoop.length];
-                            articleTemplate = self.getSimpleArticleTemplate(article, currentForm[siteSettings.currentView], loop);
+                            // let loop = Math.floor(i / siteSettings.columnsForLoop);
+                            // let currentForm = siteSettings.articlesLoop[i % siteSettings.articlesLoop.length];
+                            // articleTemplate = self.getSimpleArticleTemplate(article, currentForm[siteSettings.currentView], loop);
+                            articleTemplate = self.getSimpleArticleTemplate(article);
+                            
                             articleHTML += articleTemplate;
+
                         }
                         
                         articlesContainer.prepend(articleHTML);                        
