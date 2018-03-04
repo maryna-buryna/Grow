@@ -1,0 +1,56 @@
+@import "reset.css";
+
+@gray: #777777;
+@white: #ffffff;
+
+
+/*separator*/
+@separatorColor: #eeeeee;
+
+.topSeparator {
+    border-top: 1px solid @separatorColor;
+}
+.bottomSeparator {
+    border-bottom: 1px solid @separatorColor;
+}
+.leftSeparator {
+    border-left: 1px solid @separatorColor;
+}
+.rightSeparator {
+    border-right: 1px solid @separatorColor;
+}
+
+
+/*     backgrounds */
+@backgroundColor: @white;
+@articleBodyBackgroundColor: #dddddd;
+
+
+/* colors */
+@navLinkColor: @white;
+@logoTextColor: @gray;
+@footerColor: @white;
+
+@articleTitleColor: #000000;
+@articleTextColor: #aaaaaa;
+@articlesDetailsColor: @gray;
+@articlesDetailsHoverColor: #23527c;
+@articleColor: @white;
+
+
+/*  fonts */
+@mainFont: 12px 'Open Sans', arial, sans-serif;
+
+
+/*  states rules  */
+.display--modify {
+    display: none;
+}
+
+.article--modify .display--modify  {
+    display: block;
+}
+
+.article--modify .display--show {
+    display: none;
+}
